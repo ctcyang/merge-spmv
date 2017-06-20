@@ -79,6 +79,8 @@ endif
 #-------------------------------------------------------------------------------
 
 CUB_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
+MGPU_DIR = "moderngpu/"
+MGPU2_DIR = "moderngpu2/"
 
 NVCC = "$(shell which nvcc)"
 ifdef nvccver
@@ -114,7 +116,7 @@ endif
 else
     # For g++
     # Disable excess x86 floating point precision that can lead to results being labeled incorrectly
-    NVCCFLAGS += -Xcompiler -ffloat-store
+    NVCCFLAGS += -Xcompiler -ffloat-store -std=c++11 --expt-extended-lambda
     CC = g++
 ifneq ($(force32), 1)
     CUDART = "$(shell dirname $(NVCC))/../lib/libcudart_static.a"
@@ -133,7 +135,7 @@ OMPCC=icpc
 OMPCC_FLAGS=-openmp -O3 -lrt -fno-alias -xHost -lnuma -O3 -mkl
 
 # Includes
-INC += -I$(CUB_DIR) -I$(CUB_DIR)test 
+INC += -I$(CUB_DIR) -I$(CUB_DIR)test  -I${MGPU_DIR}include -I${MGPU2_DIR}src/moderngpu
 
 # detect OS
 OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
@@ -147,6 +149,12 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 DEPS = 	$(call rwildcard, $(CUB_DIR),*.cuh) \
 		$(call rwildcard, $(CUB_DIR),*.h) \
         Makefile
+MGPU_DEPS = $(call rwildcard, $(MGPU_DIR),*.cuh) \
+		$(call rwildcard, $(MGPU_DIR),*.h) \
+		    Makefile
+MGPU2_DEPS = $(call rwildcard, $(MGPU2_DIR),*.cuh) \
+		$(call rwildcard, $(MGPU_DIR),*.hxx) \
+		    Makefile
 
 #-------------------------------------------------------------------------------
 # make clean
@@ -160,8 +168,11 @@ clean :
 # make gpu_spmv
 #-------------------------------------------------------------------------------
 
-gpu_spmv : gpu_spmv.cu $(DEPS)
-	$(NVCC) $(DEFINES) $(SM_TARGETS) -o _gpu_spmv_driver gpu_spmv.cu $(NVCCFLAGS) $(CPU_ARCH) $(INC) $(LIBS) -lcusparse -O3
+#moderngpu/src/mgpuutil.o: moderngpu/src/mgpuutil.cpp.o
+#  $(NVCC) $(DEFINES) $(SM_TARGETS) -o _gpu_spmv_driver moderngpu
+
+gpu_spmv : gpu_spmv.cu $(DEPS) $(MGPU_DEPS) $(MGPU2_DEPS)
+	$(NVCC) $(DEFINES) $(SM_TARGETS) -o _gpu_spmv_driver gpu_spmv.cu moderngpu/src/mgpucontext.cu moderngpu/src/mgpuutil.cpp $(NVCCFLAGS) $(CPU_ARCH) $(INC) $(LIBS) -lcusparse -O3
 
 	
 #-------------------------------------------------------------------------------

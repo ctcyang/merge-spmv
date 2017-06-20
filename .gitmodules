@@ -1,0 +1,7 @@
+[submodule "moderngpu"]
+	path = moderngpu
+  url = https://ctcyang@github.com/moderngpu/moderngpu.git
+	branch = V1.1
+[submodule "moderngpu2"]
+	path = moderngpu2
+	url = https://ctcyang@github.com/moderngpu/moderngpu.git

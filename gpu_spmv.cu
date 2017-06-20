@@ -45,6 +45,10 @@
 #include <cub/util_allocator.cuh>
 #include <cub/iterator/tex_ref_input_iterator.cuh>
 
+#include "moderngpu/include/moderngpu.cuh"
+//#include "moderngpu/include/kernels/spmvcsr.cuh"
+#include "moderngpu2/src/moderngpu/kernel_segreduce.hxx"
+
 #include "sparse_matrix.h"
 #include <utils.h>
 
@@ -91,8 +95,107 @@ void SpmvGold(
     }
 }
 
+//---------------------------------------------------------------------
+// Moderngpu 1.1 SpMV
+//---------------------------------------------------------------------
+template<typename ValueT, typename OffsetT>
+float TestModerngpuSpmv(
+    ValueT*                         vector_y_in,
+    ValueT*                         reference_vector_y_out,
+    SpmvParams<ValueT, OffsetT>&    params,
+    int                             timing_iterations,
+    float                           &setup_ms)
+{
+    CpuTimer cpu_timer;
+    cpu_timer.Start();
 
+    mgpu::ContextPtr context = mgpu::CreateCudaDevice(0);
 
+    cudaDeviceSynchronize();
+    cpu_timer.Stop();
+    setup_ms = cpu_timer.ElapsedMillis();
+
+    // Reset input/output vector y
+    CubDebugExit(cudaMemcpy(params.d_vector_y, vector_y_in, sizeof(ValueT) * params.num_rows, cudaMemcpyHostToDevice));
+
+    // Warmup
+    mgpu::SpmvCsrBinary(params.d_values, params.d_column_indices, params.num_nonzeros, 
+        params.d_row_end_offsets, params.num_rows, params.d_vector_x, false, 
+        params.d_vector_y, (ValueT)0, mgpu::multiplies<ValueT>(), 
+        mgpu::plus<ValueT>(), *context);
+
+    if (!g_quiet)
+    {
+        int compare = CompareDeviceResults(reference_vector_y_out, params.d_vector_y, params.num_rows, true, g_verbose);
+        printf("\t%s\n", compare ? "FAIL" : "PASS"); fflush(stdout);
+    }
+
+    // Timing
+    float elapsed_ms    = 0.0;
+    GpuTimer timer;
+
+    timer.Start();
+    for(int it = 0; it < timing_iterations; ++it)
+    {
+        mgpu::SpmvCsrBinary(params.d_values, params.d_column_indices, 
+            params.num_nonzeros, params.d_row_end_offsets, params.num_rows, 
+            params.d_vector_x, false, params.d_vector_y, (ValueT)0, 
+            mgpu::multiplies<ValueT>(), mgpu::plus<ValueT>(), *context);
+    }
+    timer.Stop();
+    elapsed_ms += timer.ElapsedMillis();
+
+    return elapsed_ms / timing_iterations;
+}
+
+//---------------------------------------------------------------------
+// Moderngpu 2.12 SpMV
+//---------------------------------------------------------------------
+template<typename ValueT, typename OffsetT>
+float TestModerngpu2Spmv(
+    ValueT*                         vector_y_in,
+    ValueT*                         reference_vector_y_out,
+    SpmvParams<ValueT, OffsetT>&    params,
+    int                             timing_iterations,
+    float                           &setup_ms)
+{
+    CpuTimer cpu_timer;
+    cpu_timer.Start();
+
+    mgpu2::standard_context_t context;
+
+    cudaDeviceSynchronize();
+    cpu_timer.Stop();
+    setup_ms = cpu_timer.ElapsedMillis();
+
+    // Reset input/output vector y
+    CubDebugExit(cudaMemcpy(params.d_vector_y, vector_y_in, sizeof(ValueT) * params.num_rows, cudaMemcpyHostToDevice));
+
+    // Warmup
+    mgpu2::spmv( params.d_values, params.d_column_indices, params.d_vector_x,
+        params.num_nonzeros, params.d_row_end_offsets, params.num_rows, 
+        params.d_vector_y, context);
+
+    if (!g_quiet)
+    {
+        int compare = CompareDeviceResults(reference_vector_y_out, params.d_vector_y, params.num_rows, true, g_verbose);
+        printf("\t%s\n", compare ? "FAIL" : "PASS"); fflush(stdout);
+    }
+
+    // Timing
+    float elapsed_ms    = 0.0;
+    GpuTimer timer;
+
+    timer.Start();
+    for(int it = 0; it < timing_iterations; ++it)
+    {
+      mgpu2::spmv( params.d_values, params.d_column_indices, params.d_vector_x,
+        params.num_nonzeros, params.d_row_end_offsets, params.num_rows, 
+        params.d_vector_y, context);
+    }
+    timer.Stop();
+    elapsed_ms += timer.ElapsedMillis();
+}
 
 //---------------------------------------------------------------------
 // cuSparse HybMV
@@ -559,6 +662,18 @@ void RunTest(
     if (!g_quiet) printf("\n\n");
     printf("Merge-based CsrMV, "); fflush(stdout);
     avg_ms = TestGpuMergeCsrmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
+
+  // ModernGPU 1.1 SpMV
+    if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 1.1 SpMV, "); fflush(stdout);
+    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
+
+  // ModernGPU 2.12 SpMV
+    if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 2.12 SpMV, "); fflush(stdout);
+    avg_ms = TestModerngpu2Spmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
     DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
 
     // Initialize cuSparse
