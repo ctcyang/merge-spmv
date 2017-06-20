@@ -195,6 +195,8 @@ float TestModerngpu2Spmv(
     }
     timer.Stop();
     elapsed_ms += timer.ElapsedMillis();
+
+    return elapsed_ms / timing_iterations;
 }
 
 //---------------------------------------------------------------------
