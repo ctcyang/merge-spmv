@@ -172,7 +172,7 @@ clean :
 #  $(NVCC) $(DEFINES) $(SM_TARGETS) -o _gpu_spmv_driver moderngpu
 
 gpu_spmv : gpu_spmv.cu $(DEPS) $(MGPU_DEPS) $(MGPU2_DEPS)
-	$(NVCC) $(DEFINES) $(SM_TARGETS) -o _gpu_spmv_driver gpu_spmv.cu moderngpu/src/mgpucontext.cu moderngpu/src/mgpuutil.cpp $(NVCCFLAGS) $(CPU_ARCH) $(INC) $(LIBS) -lcusparse -O3
+	$(NVCC) $(DEFINES) $(SM_TARGETS) -o gpu_spmv gpu_spmv.cu moderngpu/src/mgpucontext.cu moderngpu/src/mgpuutil.cpp $(NVCCFLAGS) $(CPU_ARCH) $(INC) $(LIBS) -lcusparse -O3
 
 	
 #-------------------------------------------------------------------------------
@@ -180,5 +180,5 @@ gpu_spmv : gpu_spmv.cu $(DEPS) $(MGPU_DEPS) $(MGPU2_DEPS)
 #-------------------------------------------------------------------------------
 
 cpu_spmv : cpu_spmv.cpp $(DEPS)
-	$(OMPCC) $(DEFINES) -DCUB_MKL -o _cpu_spmv_driver cpu_spmv.cpp $(OMPCC_FLAGS)
+	$(OMPCC) $(DEFINES) -DCUB_MKL -o cpu_spmv cpu_spmv.cpp $(OMPCC_FLAGS)
 
