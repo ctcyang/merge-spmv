@@ -131,7 +131,7 @@ endif
 #-------------------------------------------------------------------------------
 
 # OMP compiler
-OMPCC=icpc
+OMPCC=/opt/intel/bin/icpc
 OMPCC_FLAGS=-openmp -O3 -lrt -fno-alias -xHost -lnuma -O3 -mkl
 
 # Includes
