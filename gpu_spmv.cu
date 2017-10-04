@@ -608,10 +608,11 @@ void RunTest(
 
     // Display matrix info
     csr_matrix.Stats().Display(!g_quiet);
+    csr_matrix.DisplayHistogram(g_quiet);
     if (!g_quiet)
     {
         printf("\n");
-        csr_matrix.DisplayHistogram();
+        csr_matrix.DisplayHistogram(g_quiet);
         printf("\n");
         if (g_verbose2)
             csr_matrix.Display();
@@ -667,24 +668,6 @@ void RunTest(
     avg_ms = TestGpuMergeCsrmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
     DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
 
-  // ModernGPU 1.1 SpMV
-    /*if (!g_quiet) printf("\n\n");
-    printf("ModernGPU 1.1 SpMV, "); fflush(stdout);
-    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, false, timing_iterations, setup_ms);
-    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
-
-  // ModernGPU 1.1 SpMV support_empty = true
-    if (!g_quiet) printf("\n\n");
-    printf("ModernGPU 1.1 SpMV support_empty = true, "); fflush(stdout);
-    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, true, timing_iterations, setup_ms);
-    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
-
-  // ModernGPU 2.12 SpMV
-    if (!g_quiet) printf("\n\n");
-    printf("ModernGPU 2.12 SpMV, "); fflush(stdout);
-    avg_ms = TestModerngpu2Spmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
-    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
-
     // Initialize cuSparse
     cusparseHandle_t cusparse;
     AssertEquals(CUSPARSE_STATUS_SUCCESS, cusparseCreate(&cusparse));
@@ -695,11 +678,35 @@ void RunTest(
     avg_ms = TestCusparseCsrmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms, cusparse);
     DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
 
-	// cuSPARSE HybMV
+  // ModernGPU 1.1 SpMV
     if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 1.1 SpMV, "); fflush(stdout);
+    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, false, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
+
+  // ModernGPU 1.1 SpMV support_empty = true
+    /*if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 1.1 SpMV support_empty = true, "); fflush(stdout);
+    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, true, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
+
+  // ModernGPU 2.12 SpMV
+    /*if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 2.12 SpMV, "); fflush(stdout);
+    avg_ms = TestModerngpu2Spmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
+
+	// cuSPARSE CsrMV
+    /*if (!g_quiet) printf("\n\n");
+    printf("cuSPARSE CsrMV, "); fflush(stdout);
+    avg_ms = TestCusparseCsrmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms, cusparse);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
+
+	// cuSPARSE HybMV
+    /*if (!g_quiet) printf("\n\n");
     printf("cuSPARSE HybMV, "); fflush(stdout);
     avg_ms = TestCusparseHybmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms, cusparse);
-    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
 
     // Cleanup
     if (params.d_values)            CubDebugExit(g_allocator.DeviceFree(params.d_values));

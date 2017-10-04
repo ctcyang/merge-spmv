@@ -916,14 +916,17 @@ struct CsrMatrix
     /**
      * Display log-histogram to stdout
      */
-    void DisplayHistogram()
+    void DisplayHistogram( bool g_quiet )
     {
         // Initialize
         OffsetT log_counts[9];
+        OffsetT count[32];
         for (OffsetT i = 0; i < 9; i++)
         {
             log_counts[i] = 0;
         }
+        for (OffsetT i=0; i<32; i++ )
+            count[i] = 0;
 
         // Scan
         OffsetT max_log_length = -1;
@@ -933,6 +936,7 @@ struct CsrMatrix
             OffsetT length = row_offsets[row + 1] - row_offsets[row];
             if (length > max_length)
                 max_length = length;
+            count[length&31]++;
 
             OffsetT log_length = -1;
             while (length > 0)
@@ -947,10 +951,20 @@ struct CsrMatrix
 
             log_counts[log_length + 1]++;
         }
-        printf("CSR matrix (%d rows, %d columns, %d non-zeros, max-length %d):\n", (int) num_rows, (int) num_cols, (int) num_nonzeros, (int) max_length);
-        for (OffsetT i = -1; i < max_log_length + 1; i++)
+        double utilization = (double) count[0];
+        for (OffsetT i=1; i<32; i++ )
         {
-            printf("\tDegree 1e%d: \t%d (%.2f%%)\n", i, log_counts[i + 1], (float) log_counts[i + 1] * 100.0 / num_cols);
+            utilization += count[i]*i/32.;
+        }
+        printf("%.5f, ", utilization/num_rows); 
+
+        if(!g_quiet)
+        {
+            printf("CSR matrix (%d rows, %d columns, %d non-zeros, max-length %d):\n", (int) num_rows, (int) num_cols, (int) num_nonzeros, (int) max_length);
+            for (OffsetT i = -1; i < max_log_length + 1; i++)
+            {
+                printf("\tDegree 1e%d: \t%d (%.2f%%)\n", i, log_counts[i + 1], (float) log_counts[i + 1] * 100.0 / num_cols);
+            }
         }
         fflush(stdout);
     }
