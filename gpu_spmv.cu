@@ -103,6 +103,7 @@ float TestModerngpuSpmv(
     ValueT*                         vector_y_in,
     ValueT*                         reference_vector_y_out,
     SpmvParams<ValueT, OffsetT>&    params,
+    bool                            support_empty,
     int                             timing_iterations,
     float                           &setup_ms)
 {
@@ -120,7 +121,7 @@ float TestModerngpuSpmv(
 
     // Warmup
     mgpu::SpmvCsrBinary(params.d_values, params.d_column_indices, params.num_nonzeros, 
-        params.d_row_end_offsets, params.num_rows, params.d_vector_x, false, 
+        params.d_row_end_offsets, params.num_rows, params.d_vector_x, support_empty, 
         params.d_vector_y, (ValueT)0, mgpu::multiplies<ValueT>(), 
         mgpu::plus<ValueT>(), *context);
 
@@ -139,7 +140,7 @@ float TestModerngpuSpmv(
     {
         mgpu::SpmvCsrBinary(params.d_values, params.d_column_indices, 
             params.num_nonzeros, params.d_row_end_offsets, params.num_rows, 
-            params.d_vector_x, false, params.d_vector_y, (ValueT)0, 
+            params.d_vector_x, support_empty, params.d_vector_y, (ValueT)0, 
             mgpu::multiplies<ValueT>(), mgpu::plus<ValueT>(), *context);
     }
     timer.Stop();
@@ -667,10 +668,16 @@ void RunTest(
     DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
 
   // ModernGPU 1.1 SpMV
-    if (!g_quiet) printf("\n\n");
+    /*if (!g_quiet) printf("\n\n");
     printf("ModernGPU 1.1 SpMV, "); fflush(stdout);
-    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, timing_iterations, setup_ms);
+    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, false, timing_iterations, setup_ms);
     DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);
+
+  // ModernGPU 1.1 SpMV support_empty = true
+    if (!g_quiet) printf("\n\n");
+    printf("ModernGPU 1.1 SpMV support_empty = true, "); fflush(stdout);
+    avg_ms = TestModerngpuSpmv(vector_y_in, vector_y_out, params, true, timing_iterations, setup_ms);
+    DisplayPerf(device_giga_bandwidth, setup_ms, avg_ms, csr_matrix);*/
 
   // ModernGPU 2.12 SpMV
     if (!g_quiet) printf("\n\n");
@@ -734,7 +741,7 @@ void RunTests(
         if ((coo_matrix.num_rows == 1) || (coo_matrix.num_cols == 1) || (coo_matrix.num_nonzeros == 1))
         {
             if (!g_quiet) printf("Trivial dataset\n");
-            exit(0);
+            //exit(0);
         }
         printf("%s, ", mtx_filename.c_str()); fflush(stdout);
     }

@@ -344,6 +344,7 @@ struct DispatchSpmv
     {
         typedef AgentSpmvPolicy<
                 (sizeof(ValueT) > 4) ? 96 : 128,
+                //1,
                 (sizeof(ValueT) > 4) ? 4 : 7,
                 LOAD_LDG,
                 LOAD_CA,
